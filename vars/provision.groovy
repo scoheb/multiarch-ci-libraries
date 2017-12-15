@@ -38,6 +38,7 @@ Slave call(String arch, Boolean connectToMaster, Boolean installAnsible) {
     }
   } catch (e) {
     slave.error = e.toString()
+    currentBuild.result = 'FAILURE'
   }
 
   slave

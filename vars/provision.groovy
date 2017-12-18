@@ -9,7 +9,7 @@
  */
 import com.redhat.multiarch.ci.Slave
 
-Slave call(String arch, Boolean connectToMaster, Boolean installAnsible) {
+Slave call(String arch, String krb5Principal, String KEYTABCREDENTIALID, Boolean connectToMaster, Boolean installAnsible) {
   Slave slave = new Slave(
     arch: arch,
     target: 'jenkins-slave',
@@ -17,6 +17,20 @@ Slave call(String arch, Boolean connectToMaster, Boolean installAnsible) {
   )
 
   try {
+
+    withCredentials([file(credentialsId: KEYTABCREDENTIALID,
+            variable: 'KEYTAB')]) {
+      sh "kinit ${krbPrincipal} -k -t ${KEYTAB}"
+
+      def clientConf = readFile '/etc/beaker/client.conf'
+      writeFile(file: "/tmp/client.conf", text: "${clientConf}\nKRB_KEYTAB = \"${KEYTAB}\"\n")
+
+      env.BEAKER_CLIENT_CONF = '/tmp/client.conf'
+
+      sh 'bkr whoami'
+
+    }
+
     // Get linchpin workspace
     git(url: 'https://github.com/RedHat-MultiArch-QE/multiarch-ci-provisioner', branch: 'dev')
     

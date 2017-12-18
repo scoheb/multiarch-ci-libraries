@@ -12,19 +12,22 @@
  */
 import com.redhat.multiarch.ci.Slave
 
-def call(String arch, Boolean runOnSlave, Boolean installAnsible, Closure test, Closure onTestFailure) {
+def call(String arch, String tenant, String dockerUrl,
+         String krbPrincipal, String KEYTABCREDENTIALID,
+         Boolean runOnSlave, Boolean installAnsible,
+         Closure test, Closure onTestFailure) {
   podTemplate(
     name: 'provisioner',
     label: 'provisioner',
     cloud: 'openshift',
     serviceAccount: 'jenkins',
     idleMinutes: 0,
-    namespace: 'redhat-multiarch-qe',
+    namespace: tenant,
     containers: [
       // This adds the custom slave container to the pod. Must be first with name 'jnlp'
       containerTemplate(
         name: 'jnlp',
-        image: '172.30.1.1:5000/redhat-multiarch-qe/provisioner',
+        image: "${dockerUrl}/${tenant}/provisioner",
         ttyEnabled: false,
         args: '${computer.jnlpmac} ${computer.name}',
         command: '',
@@ -39,7 +42,7 @@ def call(String arch, Boolean runOnSlave, Boolean installAnsible, Closure test, 
           Slave slave
           try {
             stage('Provision Slave') {
-              slave = provision(arch, runOnSlave, installAnsible)
+              slave = provision(arch, krbPrincipal, KEYTABCREDENTIALID, runOnSlave, installAnsible)
 
               // Property validity check
               if (!slave.name || !slave.arch) {
